@@ -81,6 +81,27 @@ fork 는 GitHub 의 핵심 기능 — 다른 사람의 repo 를 내 계정으로
 `https://github.com/hoon720823/FFmpeg-Builds` 가 생김. BtbN 의 모든 파일
 (빌드 스크립트, GitHub Actions 워크플로우 등) 이 본인 계정 안에 복사됨.
 
+### ⚠️ fork 직후 즉시 해야 할 것: Workflow permissions 활성
+
+GitHub fork 의 default 설정은 GitHub Actions 가 **GitHub Container Registry**
+(ghcr.io) 에 docker package 를 만들 권한이 **비활성**입니다. 이대로 두면
+첫 빌드의 `Build base image` 단계에서:
+
+```
+failed to push ghcr.io/<user>/ffmpeg-builds/base:latest:
+denied: installation not allowed to Create organization package
+```
+
+이 에러로 100% 실패. 다음 한 번만 활성:
+
+1. https://github.com/hoon720823/FFmpeg-Builds/settings/actions 접속
+2. 페이지 **가장 아래까지 스크롤** → **Workflow permissions** 섹션
+3. 두 옵션 중 **"Read and write permissions"** 라디오 선택
+4. (선택) **"Allow GitHub Actions to create and approve pull requests"** 체크
+5. **Save** 버튼 클릭
+
+이걸 안 하면 다음 단계 다 진행해도 첫 빌드 실패합니다. fork 끝나고 바로 진행.
+
 > ✅ 이미 완료하셨다면 다음 단계.
 
 ---
@@ -245,6 +266,26 @@ ZMQ patch 적용 확인 — patch 자체 동작은 다른 단계 (PoC 시나리�
 ---
 
 ## 8. 자주 발생하는 문제
+
+### "ghcr.io denied: installation not allowed to Create organization package"
+
+증상: `Build base image (ubuntu-latest)` 또는 `(ubuntu-24.04-arm)` job 의
+docker push 단계에서 위 에러. 사실상 첫 fork 의 첫 빌드는 거의 항상 이걸로
+실패합니다.
+
+원인: fork 의 GitHub Actions 가 GitHub Container Registry (ghcr.io) 에 package
+생성 권한이 **default 비활성**. fork 시 BtbN organization 의 권한 셋업이 같이
+오지 않음.
+
+해결:
+1. https://github.com/hoon720823/FFmpeg-Builds/settings/actions 접속
+2. 하단 **Workflow permissions** 섹션 → **"Read and write permissions"** 라디오
+   선택 → **Save**
+3. 실패한 빌드 페이지로 돌아가 우상단 **Re-run all jobs**
+   (또는 Actions 탭 → Build FFmpeg → **Run workflow** 으로 새 trigger)
+
+→ 이건 단계 1 (fork 직후) 의 "fork 직후 즉시 해야 할 것" 항목과 동일.
+이미 활성하셨으면 발생 안 함.
 
 ### "PAT secret 인증 실패"
 

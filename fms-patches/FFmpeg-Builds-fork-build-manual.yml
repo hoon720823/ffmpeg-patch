@@ -1,10 +1,8 @@
 name: Build FFmpeg
 
+# Manual-only trigger — push / schedule 제거.
+# 빌드 시작은 Actions 탭의 'Run workflow' 버튼 (workflow_dispatch) 만 사용.
 on:
-  push:
-    paths-ignore:
-      - '**.md'
-      - 'LICENSE'
   workflow_dispatch:
     inputs:
       doRelease:
@@ -17,8 +15,6 @@ on:
         type: boolean
         default: false
         required: false
-  schedule:
-    - cron: '0 12 * * *'
 
 env:
   DOCKER_BUILDKIT: 1
@@ -269,8 +265,7 @@ jobs:
           password: ${{ github.token }}
       - name: Build ffmpeg
         env:
-          #FFMPEG_REPO: https://x-access-token:${{ secrets.FFMPEG_PAT }}@github.com/hoon720823/ffmpeg-patch.git
-          FFMPEG_REPO: https://github.com/hoon720823/ffmpeg-patch.git
+          FFMPEG_REPO: https://x-access-token:${{ secrets.FFMPEG_PAT }}@github.com/hoon720823/ffmpeg-patch.git
           GIT_BRANCH: master
         run: |
           T="$(echo -n ${{ github.token }} | sha256sum | head -c 64)" && echo -e "::add-mask::${T}\n::stop-commands::${T}"
@@ -288,7 +283,7 @@ jobs:
           path: artifacts/*
   publish_release:
     name: Publish release
-    if: ${{ !cancelled() && ( github.event_name == 'schedule' || github.event.inputs.doRelease == 'true' ) && needs.build_ffmpeg.result == 'success' }}
+    if: ${{ !cancelled() && github.event.inputs.doRelease == 'true' && needs.build_ffmpeg.result == 'success' }}
     needs: build_ffmpeg
     runs-on: ubuntu-latest
     steps:
